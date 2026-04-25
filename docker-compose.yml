@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  pdf-converter:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+    restart: unless-stopped
+    # Increase shared memory for LibreOffice rendering
+    shm_size: '256mb'
+    deploy:
+      resources:
+        limits:
+          memory: 1G

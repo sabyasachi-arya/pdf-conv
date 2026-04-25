@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>PDF Converter by TechSaby</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet"/>
+  <style>
+    /* ── TOKENS ─────────────────────────────────────────────────── */
+    :root {
+      --bg:       #080810;
+      --surface:  #0f0f1a;
+      --card:     #141420;
+      --border:   #252535;
+      --text:     #e6e6f0;
+      --muted:    #72728a;
+      --a1:       #7c6dfa;
+      --a2:       #fa6d8d;
+      --a3:       #3de87a;
+      --glow:     rgba(124,109,250,.3);
+      --shadow:   0 12px 48px rgba(0,0,0,.65);
+      --radius:   18px;
+    }
+    [data-theme="light"] {
+      --bg:       #ededf6;
+      --surface:  #f8f8ff;
+      --card:     #ffffff;
+      --border:   #d8d8e8;
+      --text:     #18182c;
+      --muted:    #8080a0;
+      --a1:       #5c4ee8;
+      --a2:       #e04466;
+      --a3:       #1db85a;
+      --glow:     rgba(92,78,232,.14);
+      --shadow:   0 12px 48px rgba(0,0,0,.1);
+    }
+
+    /* ── RESET ──────────────────────────────────────────────────── */
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html{scroll-behavior:smooth}
+    body{
+      font-family:'DM Sans',sans-serif;
+      background:var(--bg);
+      color:var(--text);
+      min-height:100vh;
+      transition:background .3s,color .3s;
+      overflow-x:hidden;
+    }
+
+    /* ── AMBIENT ORBS ───────────────────────────────────────────── */
+    .orbs{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+    .orb{position:absolute;border-radius:50%;filter:blur(90px);opacity:.1;animation:drift 20s ease-in-out infinite alternate}
+    [data-theme="light"] .orb{opacity:.05}
+    .o1{width:700px;height:700px;background:var(--a1);top:-250px;left:-150px;animation-delay:0s}
+    .o2{width:500px;height:500px;background:var(--a2);bottom:-150px;right:-100px;animation-delay:-8s}
+    .o3{width:350px;height:350px;background:var(--a3);top:35%;left:55%;animation-delay:-15s}
+    @keyframes drift{0%{transform:translate(0,0) scale(1)}100%{transform:translate(50px,35px) scale(1.1)}}
+
+    /* ── GRAIN OVERLAY ──────────────────────────────────────────── */
+    .grain{
+      position:fixed;inset:0;z-index:1;pointer-events:none;opacity:.025;
+      background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-size:200px;
+    }
+
+    /* ── LAYOUT ─────────────────────────────────────────────────── */
+    .wrap{position:relative;z-index:2;display:flex;flex-direction:column;min-height:100vh}
+
+    /* ── NAV ────────────────────────────────────────────────────── */
+    nav{
+      display:flex;justify-content:space-between;align-items:center;
+      padding:1.1rem 2.5rem;
+      border-bottom:1px solid var(--border);
+      background:rgba(8,8,16,.55);
+      backdrop-filter:blur(20px);
+      position:sticky;top:0;z-index:100;
+      transition:background .3s,border-color .3s;
+    }
+    [data-theme="light"] nav{background:rgba(237,237,246,.7)}
+    .logo{
+      font-family:'Syne',sans-serif;font-weight:800;font-size:1.1rem;
+      display:flex;align-items:center;gap:.55rem;letter-spacing:.3px;
+    }
+    .logo-mark{
+      width:30px;height:30px;border-radius:9px;
+      background:linear-gradient(135deg,var(--a1),var(--a2));
+      display:flex;align-items:center;justify-content:center;
+      font-size:.9rem;box-shadow:0 4px 14px var(--glow);
+      animation:logoFloat 3s ease-in-out infinite;
+    }
+    @keyframes logoFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+
+    /* theme toggle */
+    .tog{
+      display:flex;align-items:center;gap:.5rem;
+      background:var(--card);border:1px solid var(--border);
+      border-radius:50px;padding:.3rem .4rem;cursor:pointer;
+      transition:background .3s,border-color .3s;
+    }
+    .tog-icon{
+      width:26px;height:26px;border-radius:50%;
+      display:flex;align-items:center;justify-content:center;
+      font-size:.85rem;transition:background .3s,transform .3s;
+    }
+    .tog-icon.active{background:var(--a1);transform:scale(1.1)}
+    [data-theme="light"] .tog-icon.active{background:var(--a2)}
+
+    /* ── HERO ───────────────────────────────────────────────────── */
+    .hero{
+      text-align:center;
+      padding:5.5rem 2rem 2.5rem;
+      animation:fadeUp .8s ease both;
+    }
+    @keyframes fadeUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}
+    .pill{
+      display:inline-flex;align-items:center;gap:.45rem;
+      background:var(--card);border:1px solid var(--border);
+      border-radius:50px;padding:.32rem .95rem;
+      font-size:.74rem;font-weight:500;color:var(--muted);
+      letter-spacing:.6px;text-transform:uppercase;margin-bottom:1.6rem;
+    }
+    .pill-dot{width:6px;height:6px;border-radius:50%;background:var(--a3);box-shadow:0 0 8px var(--a3)}
+    h1{
+      font-family:'Syne',sans-serif;
+      font-size:clamp(2rem,4.5vw,3.8rem);
+      font-weight:800;line-height:1.1;letter-spacing:-1.5px;
+      background:linear-gradient(130deg,var(--text) 25%,var(--a1) 80%,var(--a2) 100%);
+      -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+      margin-bottom:1.1rem;
+    }
+    .hero-sub{color:var(--muted);font-size:1rem;line-height:1.7;max-width:500px;margin:0 auto}
+
+    /* ── CARD ───────────────────────────────────────────────────── */
+    .card{
+      background:var(--card);border:1px solid var(--border);
+      border-radius:var(--radius);padding:2.5rem;
+      max-width:660px;width:calc(100% - 2.5rem);
+      margin:2.5rem auto 0;
+      box-shadow:var(--shadow);
+      transition:background .3s,border-color .3s;
+      animation:fadeUp .8s .15s ease both;
+    }
+
+    /* ── DROPZONE ───────────────────────────────────────────────── */
+    .dz{
+      border:2px dashed var(--border);border-radius:14px;
+      padding:3.2rem 2rem;text-align:center;cursor:pointer;
+      background:var(--surface);
+      transition:border-color .25s,background .25s,transform .2s,box-shadow .25s;
+      position:relative;
+    }
+    .dz:hover,.dz.over{border-color:var(--a1);background:rgba(124,109,250,.05);transform:scale(1.008)}
+    .dz.over{box-shadow:0 0 40px var(--glow)}
+    #fi{display:none}
+
+    .dz-ring{
+      width:76px;height:76px;margin:0 auto 1.3rem;
+      background:linear-gradient(135deg,var(--a1),var(--a2));
+      border-radius:22px;display:flex;align-items:center;justify-content:center;
+      font-size:2.1rem;box-shadow:0 8px 28px var(--glow);
+      transition:transform .3s;
+    }
+    .dz:hover .dz-ring{transform:translateY(-5px) rotate(4deg)}
+    .dz-title{font-family:'Syne',sans-serif;font-size:1.15rem;font-weight:700;margin-bottom:.45rem}
+    .dz-sub{color:var(--muted);font-size:.88rem}
+    .dz-sub b{color:var(--a1);cursor:pointer}
+    .dz-sub b:hover{text-decoration:underline}
+
+    .badges{display:flex;flex-wrap:wrap;gap:.4rem;justify-content:center;margin-top:1.3rem}
+    .badge{
+      background:var(--surface);border:1px solid var(--border);
+      border-radius:7px;padding:.22rem .6rem;
+      font-size:.7rem;font-weight:600;letter-spacing:.5px;
+      color:var(--muted);text-transform:uppercase;
+      transition:border-color .2s,color .2s;
+    }
+    .badge:hover{border-color:var(--a1);color:var(--a1)}
+
+    /* ── FILE CHIP ──────────────────────────────────────────────── */
+    .chip{
+      display:none;margin-top:1.4rem;
+      background:var(--surface);border:1px solid var(--border);
+      border-radius:12px;padding:.9rem 1.1rem;
+      align-items:center;gap:.9rem;
+      transition:background .3s,border-color .3s;
+    }
+    .chip.on{display:flex}
+    .chip-ico{
+      width:44px;height:44px;flex-shrink:0;border-radius:11px;
+      background:linear-gradient(135deg,var(--a1),var(--a2));
+      display:flex;align-items:center;justify-content:center;
+      font-size:1.25rem;box-shadow:0 4px 14px var(--glow);
+    }
+    .chip-info{flex:1;min-width:0}
+    .chip-name{font-weight:600;font-size:.93rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .chip-meta{color:var(--muted);font-size:.78rem;margin-top:.15rem}
+    .chip-rm{
+      background:none;border:none;color:var(--muted);cursor:pointer;
+      font-size:1.15rem;padding:.25rem;border-radius:6px;line-height:1;
+      transition:color .2s,background .2s;
+    }
+    .chip-rm:hover{color:var(--a2);background:rgba(250,109,141,.1)}
+
+    /* ── CONVERT BTN ────────────────────────────────────────────── */
+    .btn{
+      display:block;width:100%;margin-top:1.4rem;
+      padding:1rem;
+      background:linear-gradient(135deg,var(--a1),var(--a2));
+      color:#fff;font-family:'Syne',sans-serif;font-size:1rem;font-weight:700;
+      letter-spacing:.4px;border:none;border-radius:13px;cursor:pointer;
+      box-shadow:0 6px 26px var(--glow);
+      transition:transform .2s,box-shadow .2s,opacity .2s;
+      position:relative;overflow:hidden;
+    }
+    .btn::after{
+      content:'';position:absolute;inset:0;
+      background:linear-gradient(135deg,rgba(255,255,255,.18),transparent);
+    }
+    .btn:disabled{opacity:.45;cursor:not-allowed;transform:none!important}
+    .btn:not(:disabled):hover{transform:translateY(-2px);box-shadow:0 12px 36px var(--glow)}
+    .btn:not(:disabled):active{transform:translateY(0)}
+
+    /* ── PROGRESS ───────────────────────────────────────────────── */
+    .prog{display:none;margin-top:1.2rem}
+    .prog.on{display:block}
+    .prog-row{display:flex;justify-content:space-between;font-size:.8rem;color:var(--muted);margin-bottom:.45rem}
+    .prog-track{background:var(--surface);border:1px solid var(--border);border-radius:50px;height:5px;overflow:hidden}
+    .prog-fill{
+      height:100%;border-radius:50px;width:0%;
+      background:linear-gradient(90deg,var(--a1),var(--a2));
+      transition:width .4s ease;box-shadow:0 0 10px var(--glow);
+    }
+
+    /* ── STATUS ─────────────────────────────────────────────────── */
+    .status{display:none;margin-top:1rem;padding:.75rem 1rem;border-radius:10px;font-size:.87rem;font-weight:500}
+    .status.on{display:block}
+    .status.ok{background:rgba(61,232,122,.09);border:1px solid rgba(61,232,122,.28);color:var(--a3)}
+    .status.err{background:rgba(250,109,141,.09);border:1px solid rgba(250,109,141,.28);color:var(--a2)}
+    .status.inf{background:rgba(124,109,250,.09);border:1px solid rgba(124,109,250,.28);color:var(--a1)}
+
+    /* ── FEATURES STRIP ─────────────────────────────────────────── */
+    .feats{
+      display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:.9rem;
+      max-width:660px;width:calc(100% - 2.5rem);
+      margin:2rem auto 4rem;
+      animation:fadeUp .8s .3s ease both;
+    }
+    .feat{
+      background:var(--card);border:1px solid var(--border);border-radius:14px;
+      padding:1.2rem;transition:border-color .25s,transform .25s,background .3s;
+    }
+    .feat:hover{border-color:var(--a1);transform:translateY(-4px)}
+    .feat-ico{font-size:1.55rem;margin-bottom:.55rem}
+    .feat-t{font-family:'Syne',sans-serif;font-weight:700;font-size:.88rem;margin-bottom:.28rem}
+    .feat-d{font-size:.78rem;color:var(--muted);line-height:1.5}
+
+    /* ── DEPLOY GUIDE ───────────────────────────────────────────── */
+    .deploy{
+      max-width:660px;width:calc(100% - 2.5rem);
+      margin:0 auto 4rem;
+      background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+      overflow:hidden;
+      animation:fadeUp .8s .4s ease both;
+    }
+    .deploy-head{
+      padding:1.2rem 1.5rem;
+      border-bottom:1px solid var(--border);
+      font-family:'Syne',sans-serif;font-weight:700;font-size:.95rem;
+      display:flex;align-items:center;gap:.5rem;
+    }
+    .deploy-body{padding:1.2rem 1.5rem}
+    .step{display:flex;gap:1rem;margin-bottom:1rem;align-items:flex-start}
+    .step:last-child{margin-bottom:0}
+    .step-num{
+      width:26px;height:26px;flex-shrink:0;border-radius:8px;
+      background:linear-gradient(135deg,var(--a1),var(--a2));
+      display:flex;align-items:center;justify-content:center;
+      font-family:'Syne',sans-serif;font-weight:800;font-size:.75rem;color:#fff;
+    }
+    .step-text{font-size:.85rem;line-height:1.6;color:var(--muted);padding-top:.2rem}
+    .step-text code{
+      background:var(--surface);border:1px solid var(--border);
+      border-radius:5px;padding:.1rem .4rem;font-size:.8rem;color:var(--a1);
+    }
+
+    /* ── FOOTER ─────────────────────────────────────────────────── */
+    footer{
+      margin-top:auto;text-align:center;
+      padding:1.4rem 2rem;border-top:1px solid var(--border);
+      font-size:.8rem;color:var(--muted);
+      background:rgba(8,8,16,.45);backdrop-filter:blur(10px);
+      transition:background .3s,border-color .3s;
+    }
+    [data-theme="light"] footer{background:rgba(237,237,246,.55)}
+    footer strong{color:var(--a1)}
+
+    /* ── SCROLLBAR ──────────────────────────────────────────────── */
+    ::-webkit-scrollbar{width:5px}
+    ::-webkit-scrollbar-track{background:var(--bg)}
+    ::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+    ::-webkit-scrollbar-thumb:hover{background:var(--a1)}
+  </style>
+</head>
+<body>
+
+<div class="orbs"><div class="orb o1"></div><div class="orb o2"></div><div class="orb o3"></div></div>
+<div class="grain"></div>
+
+<div class="wrap">
+
+  <!-- NAV -->
+  <nav>
+    <div class="logo">
+      <div class="logo-mark">⚡</div>
+      TechSaby
+    </div>
+    <button class="tog" id="themeToggle" aria-label="Toggle theme">
+      <div class="tog-icon" id="moonIcon">🌙</div>
+      <div class="tog-icon active" id="sunIcon" style="display:none">☀️</div>
+    </button>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="pill"><span class="pill-dot"></span> Powered by LibreOffice · Pixel-Perfect</div>
+    <h1>Convert any file into<br/>PDF in minutes</h1>
+    <p class="hero-sub">Upload your document, spreadsheet, image, or presentation and get back a PDF that looks <em>exactly</em> like your original file — down to every font and pixel.</p>
+  </section>
+
+  <!-- CONVERTER -->
+  <div class="card">
+    <div class="dz" id="dz">
+      <input type="file" id="fi" accept=".pdf,.doc,.docx,.odt,.rtf,.xls,.xlsx,.ods,.csv,.ppt,.pptx,.odp,.txt,.html,.htm,.png,.jpg,.jpeg,.gif,.bmp,.webp,.svg,.tiff"/>
+      <div class="dz-ring">📄</div>
+      <div class="dz-title">Drop your file here</div>
+      <p class="dz-sub">or <b id="browse">browse to upload</b></p>
+      <div class="badges">
+        <span class="badge">DOCX</span><span class="badge">XLSX</span><span class="badge">PPTX</span>
+        <span class="badge">TXT</span><span class="badge">CSV</span><span class="badge">PNG</span>
+        <span class="badge">JPG</span><span class="badge">SVG</span><span class="badge">HTML</span>
+        <span class="badge">ODT</span><span class="badge">RTF</span><span class="badge">+ more</span>
+      </div>
+    </div>
+
+    <div class="chip" id="chip">
+      <div class="chip-ico" id="chipIco">📄</div>
+      <div class="chip-info">
+        <div class="chip-name" id="chipName"></div>
+        <div class="chip-meta" id="chipMeta"></div>
+      </div>
+      <button class="chip-rm" id="chipRm">✕</button>
+    </div>
+
+    <button class="btn" id="convertBtn" disabled>Convert to PDF ↗</button>
+
+    <div class="prog" id="prog">
+      <div class="prog-row"><span id="progLabel">Uploading…</span><span id="progPct">0%</span></div>
+      <div class="prog-track"><div class="prog-fill" id="progFill"></div></div>
+    </div>
+
+    <div class="status" id="status"></div>
+  </div>
+
+  <!-- FEATURES -->
+  <div class="feats">
+    <div class="feat"><div class="feat-ico">🎯</div><div class="feat-t">Pixel-Perfect</div><div class="feat-d">LibreOffice engine renders your file exactly as it looks — fonts, tables, columns, all of it.</div></div>
+    <div class="feat"><div class="feat-ico">⚡</div><div class="feat-t">Fast & Reliable</div><div class="feat-d">Server-side conversion in seconds. Works on any device, any browser.</div></div>
+    <div class="feat"><div class="feat-ico">📦</div><div class="feat-t">15+ Formats</div><div class="feat-d">DOCX, XLSX, PPTX, ODT, RTF, CSV, HTML, images and more.</div></div>
+    <div class="feat"><div class="feat-ico">🔒</div><div class="feat-t">Secure</div><div class="feat-d">Files are deleted instantly after conversion. Nothing is stored on the server.</div></div>
+  </div>
+
+  <!-- DEPLOY GUIDE -->
+  <div class="deploy">
+    <div class="deploy-head">🚀 Deploy this app on your server</div>
+    <div class="deploy-body">
+      <div class="step"><div class="step-num">1</div><div class="step-text">Install LibreOffice: <code>sudo apt install libreoffice</code> (Ubuntu/Debian) or <code>brew install --cask libreoffice</code> (Mac)</div></div>
+      <div class="step"><div class="step-num">2</div><div class="step-text">Install Python deps: <code>pip install flask flask-cors gunicorn</code></div></div>
+      <div class="step"><div class="step-num">3</div><div class="step-text">Run locally: <code>python app.py</code> or in production: <code>gunicorn -w 4 app:app</code></div></div>
+      <div class="step"><div class="step-num">4</div><div class="step-text">Deploy to any Linux VPS (DigitalOcean, Render, Railway, Fly.io) — the <code>Dockerfile</code> included handles everything automatically.</div></div>
+    </div>
+  </div>
+
+  <footer>This website is made by <strong>Sabyasachi Bhattacharjee</strong></footer>
+</div>
+
+<script>
+// ── Theme ──────────────────────────────────────────────────────────
+const html = document.documentElement;
+const moonIcon = document.getElementById('moonIcon');
+const sunIcon  = document.getElementById('sunIcon');
+
+document.getElementById('themeToggle').addEventListener('click', () => {
+  const isDark = html.dataset.theme === 'dark';
+  html.dataset.theme = isDark ? 'light' : 'dark';
+  moonIcon.classList.toggle('active', !isDark);
+  sunIcon.style.display = isDark ? 'flex' : 'none';
+  moonIcon.style.display = isDark ? 'none' : 'flex';
+  if (!isDark) sunIcon.classList.add('active');
+  else sunIcon.classList.remove('active');
+});
+
+// ── Elements ────────────────────────────────────────────────────────
+const dz         = document.getElementById('dz');
+const fi         = document.getElementById('fi');
+const browse     = document.getElementById('browse');
+const chip       = document.getElementById('chip');
+const chipIco    = document.getElementById('chipIco');
+const chipName   = document.getElementById('chipName');
+const chipMeta   = document.getElementById('chipMeta');
+const chipRm     = document.getElementById('chipRm');
+const convertBtn = document.getElementById('convertBtn');
+const prog       = document.getElementById('prog');
+const progFill   = document.getElementById('progFill');
+const progLabel  = document.getElementById('progLabel');
+const progPct    = document.getElementById('progPct');
+const statusEl   = document.getElementById('status');
+
+let selectedFile = null;
+
+// ── File selection ───────────────────────────────────────────────────
+browse.addEventListener('click', e => { e.stopPropagation(); fi.click(); });
+dz.addEventListener('click', () => fi.click());
+fi.addEventListener('change', () => { if (fi.files[0]) setFile(fi.files[0]); });
+
+dz.addEventListener('dragover',  e => { e.preventDefault(); dz.classList.add('over'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('over'));
+dz.addEventListener('drop', e => {
+  e.preventDefault(); dz.classList.remove('over');
+  if (e.dataTransfer.files[0]) setFile(e.dataTransfer.files[0]);
+});
+chipRm.addEventListener('click', clearFile);
+
+function setFile(f) {
+  selectedFile = f;
+  chipName.textContent = f.name;
+  chipMeta.textContent = fmtSize(f.size) + ' · ' + (f.type || f.name.split('.').pop().toUpperCase());
+  chipIco.textContent  = fileEmoji(f.name);
+  chip.classList.add('on');
+  convertBtn.disabled = false;
+  clearStatus(); resetProg();
+}
+function clearFile() {
+  selectedFile = null; fi.value = '';
+  chip.classList.remove('on');
+  convertBtn.disabled = true;
+  clearStatus(); resetProg();
+}
+function fmtSize(b) {
+  if (b < 1024) return b + ' B';
+  if (b < 1048576) return (b/1024).toFixed(1) + ' KB';
+  return (b/1048576).toFixed(2) + ' MB';
+}
+function fileEmoji(n) {
+  const e = n.split('.').pop().toLowerCase();
+  const m = {pdf:'📋',doc:'📝',docx:'📝',odt:'📝',rtf:'📝',xls:'📊',xlsx:'📊',ods:'📊',csv:'📊',
+             ppt:'📑',pptx:'📑',odp:'📑',txt:'📄',html:'🌐',htm:'🌐',
+             png:'🖼️',jpg:'🖼️',jpeg:'🖼️',gif:'🖼️',bmp:'🖼️',webp:'🖼️',svg:'🎨',tiff:'🖼️'};
+  return m[e] || '📄';
+}
+
+// ── Progress ────────────────────────────────────────────────────────
+function setProg(pct, label) {
+  prog.classList.add('on');
+  progFill.style.width = pct + '%';
+  progPct.textContent  = pct + '%';
+  progLabel.textContent = label;
+}
+function resetProg() { prog.classList.remove('on'); progFill.style.width = '0%'; }
+
+// ── Status ──────────────────────────────────────────────────────────
+function showStatus(msg, type) {
+  statusEl.textContent = msg;
+  statusEl.className   = 'status on ' + type;
+}
+function clearStatus() { statusEl.className = 'status'; }
+
+// ── Convert ─────────────────────────────────────────────────────────
+convertBtn.addEventListener('click', async () => {
+  if (!selectedFile) return;
+  convertBtn.disabled = true;
+  clearStatus();
+  setProg(10, 'Uploading file…');
+
+  const formData = new FormData();
+  formData.append('file', selectedFile);
+
+  try {
+    setProg(30, 'Converting via LibreOffice…');
+
+    const res = await fetch('/convert', {
+      method: 'POST',
+      body: formData
+    });
+
+    setProg(80, 'Preparing download…');
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({error: 'Server error'}));
+      throw new Error(err.error || `HTTP ${res.status}`);
+    }
+
+    const blob = await res.blob();
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    const outName = selectedFile.name.replace(/\.[^.]+$/, '') + '.pdf';
+    a.href = url; a.download = outName; a.click();
+    URL.revokeObjectURL(url);
+
+    setProg(100, 'Done!');
+    showStatus('✓ "' + outName + '" downloaded successfully!', 'ok');
+
+  } catch (err) {
+    resetProg();
+    showStatus('✗ ' + err.message, 'err');
+  }
+
+  convertBtn.disabled = false;
+});
+</script>
+</body>
+</html>
